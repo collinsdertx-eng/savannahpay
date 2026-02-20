@@ -16,6 +16,8 @@
             --soil: #231A0C;
             --brown: #3D2B0F;
             --sand: #F5E6C8;
+            --mainnet: #4CAF50;
+            --testnet: #D4A017;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -68,8 +70,7 @@
             background: linear-gradient(135deg, var(--gold), var(--amber));
             border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
-            margin: 0 auto 14px;
+            font-size: 28px; margin: 0 auto 14px;
             box-shadow: 0 8px 24px rgba(212,160,23,0.3);
         }
 
@@ -230,20 +231,54 @@
         .header-logo-text span { color: var(--gold); }
         .header-right { display: flex; align-items: center; gap: 8px; }
 
-        .badge {
-            padding: 5px 11px; border-radius: 20px;
-            font-size: 11px; display: flex; align-items: center; gap: 5px;
+        /* NETWORK SWITCHER */
+        .network-switcher {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 3px;
+            border: 1px solid rgba(212,160,23,0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+            gap: 2px;
         }
 
-        .badge-network {
-            background: rgba(212,160,23,0.1);
-            border: 1px solid rgba(212,160,23,0.2); color: var(--gold);
+        .network-switcher:hover {
+            border-color: rgba(212,160,23,0.35);
         }
 
-        .badge-dot {
-            width: 5px; height: 5px; background: var(--gold);
-            border-radius: 50%; animation: pulse 2s infinite;
+        .net-option {
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 10px;
+            font-family: 'DM Mono', monospace;
+            transition: all 0.3s;
+            color: rgba(245,230,200,0.35);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
         }
+
+        .net-option.active-testnet {
+            background: rgba(212,160,23,0.15);
+            color: var(--gold);
+        }
+
+        .net-option.active-mainnet {
+            background: rgba(76,175,80,0.15);
+            color: #81C784;
+        }
+
+        .net-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .net-dot.testnet { background: var(--gold); }
+        .net-dot.mainnet { background: #4CAF50; }
 
         .btn-exit {
             background: rgba(229,57,53,0.1);
@@ -256,12 +291,161 @@
 
         .btn-exit:hover { background: rgba(229,57,53,0.2); }
 
+        /* NETWORK SWITCH MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--soil);
+            border: 1px solid rgba(212,160,23,0.2);
+            border-radius: 24px;
+            padding: 28px;
+            width: 100%;
+            max-width: 380px;
+            animation: fadeUp 0.3s ease both;
+        }
+
+        .modal h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal h3 span { color: var(--gold); }
+
+        .modal p {
+            font-size: 12px;
+            color: rgba(245,230,200,0.5);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .network-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .network-option {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(212,160,23,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .network-option:hover {
+            border-color: rgba(212,160,23,0.3);
+            background: rgba(212,160,23,0.05);
+        }
+
+        .network-option.selected-testnet {
+            border-color: var(--gold);
+            background: rgba(212,160,23,0.08);
+        }
+
+        .network-option.selected-mainnet {
+            border-color: #4CAF50;
+            background: rgba(76,175,80,0.08);
+        }
+
+        .network-option .net-icon { font-size: 28px; margin-bottom: 8px; }
+
+        .network-option .net-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .network-option .net-desc {
+            font-size: 10px;
+            color: rgba(245,230,200,0.4);
+            line-height: 1.4;
+        }
+
+        .network-option.testnet-opt .net-name { color: var(--gold); }
+        .network-option.mainnet-opt .net-name { color: #81C784; }
+
+        .mainnet-warning {
+            background: rgba(229,57,53,0.08);
+            border: 1px solid rgba(229,57,53,0.15);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 11px;
+            color: #EF9A9A;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .mainnet-warning.show { display: block; }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-modal-cancel {
+            padding: 13px;
+            background: transparent;
+            border: 1px solid rgba(212,160,23,0.2);
+            border-radius: 12px;
+            color: rgba(245,230,200,0.5);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin: 0;
+        }
+
+        .btn-modal-cancel:hover { background: rgba(255,255,255,0.05); }
+
+        .btn-modal-confirm {
+            padding: 13px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border: none;
+            border-radius: 12px;
+            color: var(--deep);
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin: 0;
+        }
+
+        .btn-modal-confirm:hover { transform: translateY(-1px); }
+        .btn-modal-confirm.mainnet { background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; }
+
+        /* BALANCE CARD */
         .balance-card {
             background: linear-gradient(135deg, var(--brown), var(--soil));
             border: 1px solid rgba(212,160,23,0.15);
             border-radius: 24px; padding: 28px 24px;
             margin-bottom: 14px; position: relative;
             overflow: hidden; animation: fadeUp 0.5s ease 0.1s both;
+            transition: border-color 0.3s;
+        }
+
+        .balance-card.mainnet-active {
+            border-color: rgba(76,175,80,0.2);
         }
 
         .balance-card::after {
@@ -296,7 +480,6 @@
             border-radius: 6px; transition: all 0.2s; width: auto; margin: 0;
         }
 
-        /* ACTION ROW — now 4 buttons */
         .action-row {
             display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 8px; margin-bottom: 20px;
@@ -366,30 +549,16 @@
             background-position: right 16px center;
         }
 
-        /* INPUT WITH SCAN BUTTON */
-        .input-with-scan {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .input-with-scan input {
-            flex: 1;
-            margin-bottom: 0;
-        }
+        .input-with-scan { display: flex; gap: 8px; align-items: center; }
+        .input-with-scan input { flex: 1; margin-bottom: 0; }
 
         .btn-scan {
             background: rgba(212,160,23,0.1);
             border: 1px solid rgba(212,160,23,0.25);
-            border-radius: 12px;
-            color: var(--gold);
-            padding: 13px 14px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: auto;
-            margin: 0;
-            flex-shrink: 0;
+            border-radius: 12px; color: var(--gold);
+            padding: 13px 14px; font-size: 18px;
+            cursor: pointer; transition: all 0.2s;
+            width: auto; margin: 0; flex-shrink: 0;
         }
 
         .btn-scan:hover { background: rgba(212,160,23,0.2); }
@@ -421,81 +590,40 @@
         .tx-status.error { background: rgba(229,57,53,0.1); border: 1px solid rgba(229,57,53,0.2); color: #EF9A9A; }
         .tx-status.pending { background: rgba(255,143,0,0.1); border: 1px solid rgba(255,143,0,0.2); color: #FFB74D; }
 
-        /* QR CODE PANEL */
         .qr-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
-            gap: 16px;
+            display: flex; flex-direction: column;
+            align-items: center; padding: 20px 0; gap: 16px;
         }
 
         .qr-box {
-            background: white;
-            padding: 16px;
-            border-radius: 16px;
-            display: inline-block;
+            background: white; padding: 16px;
+            border-radius: 16px; display: inline-block;
             box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         }
 
         .qr-address {
-            font-size: 11px;
-            color: rgba(245,230,200,0.4);
-            text-align: center;
-            word-break: break-all;
-            line-height: 1.6;
-            padding: 0 8px;
+            font-size: 11px; color: rgba(245,230,200,0.4);
+            text-align: center; word-break: break-all; line-height: 1.6; padding: 0 8px;
         }
 
-        .qr-note {
-            font-size: 12px;
-            color: rgba(245,230,200,0.5);
-            text-align: center;
-            line-height: 1.6;
-        }
+        .qr-note { font-size: 12px; color: rgba(245,230,200,0.5); text-align: center; line-height: 1.6; }
 
-        /* SCANNER */
         .scanner-container {
-            border-radius: 14px;
-            overflow: hidden;
+            border-radius: 14px; overflow: hidden;
             border: 2px solid rgba(212,160,23,0.3);
             margin-bottom: 16px;
-            position: relative;
         }
 
-        #qrScanner {
-            width: 100%;
-        }
-
-        .scanner-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-        }
-
-        .scanner-frame {
-            width: 180px;
-            height: 180px;
-            border: 2px solid var(--gold);
-            border-radius: 12px;
-            box-shadow: 0 0 0 2000px rgba(0,0,0,0.4);
-        }
+        #qrScanner { width: 100%; }
 
         .scanner-status {
-            text-align: center;
-            font-size: 12px;
-            color: rgba(245,230,200,0.5);
-            margin-bottom: 12px;
+            text-align: center; font-size: 12px;
+            color: rgba(245,230,200,0.5); margin-bottom: 12px;
         }
 
-        /* TOKEN LIST */
         .token-item {
             display: flex; align-items: center; gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(212,160,23,0.06);
+            padding: 12px 0; border-bottom: 1px solid rgba(212,160,23,0.06);
         }
 
         .token-item:last-child { border-bottom: none; }
@@ -517,18 +645,14 @@
         .token-bal-symbol { font-size: 10px; color: var(--gold); margin-top: 2px; }
 
         .btn-add-token {
-            width: 100%; padding: 12px;
-            background: transparent;
+            width: 100%; padding: 12px; background: transparent;
             border: 1px dashed rgba(212,160,23,0.25);
             border-radius: 12px; color: rgba(245,230,200,0.4);
             font-family: 'DM Mono', monospace; font-size: 12px;
             cursor: pointer; transition: all 0.3s; margin-top: 8px;
         }
 
-        .btn-add-token:hover {
-            border-color: rgba(212,160,23,0.5);
-            color: var(--gold); background: rgba(212,160,23,0.05);
-        }
+        .btn-add-token:hover { border-color: rgba(212,160,23,0.5); color: var(--gold); background: rgba(212,160,23,0.05); }
 
         .history-card {
             background: var(--soil);
@@ -541,8 +665,7 @@
         .section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
 
         .btn-load {
-            background: none;
-            border: 1px solid rgba(212,160,23,0.2);
+            background: none; border: 1px solid rgba(212,160,23,0.2);
             border-radius: 9px; color: var(--gold);
             padding: 7px 13px; font-size: 11px;
             cursor: pointer; font-family: 'DM Mono', monospace;
@@ -554,8 +677,7 @@
 
         .tx-item {
             display: flex; align-items: center; gap: 11px;
-            padding: 11px 0;
-            border-bottom: 1px solid rgba(212,160,23,0.06);
+            padding: 11px 0; border-bottom: 1px solid rgba(212,160,23,0.06);
         }
 
         .tx-item:last-child { border-bottom: none; }
@@ -593,6 +715,36 @@
     </style>
 </head>
 <body>
+
+<!-- ══ NETWORK SWITCH MODAL ══ -->
+<div class="modal-overlay" id="networkModal">
+    <div class="modal">
+        <h3>Switch <span>Network</span></h3>
+        <p>Choose which Ethereum network to connect to. Testnet uses fake ETH for practice. Mainnet uses real ETH.</p>
+
+        <div class="network-options">
+            <div class="network-option testnet-opt selected-testnet" id="optTestnet" onclick="selectNetwork('testnet')">
+                <div class="net-icon">🧪</div>
+                <div class="net-name">Sepolia</div>
+                <div class="net-desc">Testnet<br/>Free fake ETH</div>
+            </div>
+            <div class="network-option mainnet-opt" id="optMainnet" onclick="selectNetwork('mainnet')">
+                <div class="net-icon">🌍</div>
+                <div class="net-name">Mainnet</div>
+                <div class="net-desc">Real ETH<br/>Real money</div>
+            </div>
+        </div>
+
+        <div class="mainnet-warning" id="mainnetWarning">
+            ⚠️ You are switching to Mainnet. This uses REAL ETH with real monetary value. Transactions cannot be reversed. Make sure you know what you are doing.
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn-modal-cancel" onclick="closeNetworkModal()">Cancel</button>
+            <button class="btn-modal-confirm" id="btnConfirmNetwork" onclick="confirmNetworkSwitch()">Switch Network</button>
+        </div>
+    </div>
+</div>
 
 <!-- ══ SCREEN 1: LOGIN ══ -->
 <div class="screen active center-screen" id="screenLogin">
@@ -687,14 +839,24 @@
             <div class="header-logo-text">Savannah<span>Pay</span></div>
         </div>
         <div class="header-right">
-            <div class="badge badge-network"><div class="badge-dot"></div>Sepolia</div>
-            <button class="btn-exit" onclick="logout()">⏏ Exit</button>
+            <!-- NETWORK SWITCHER -->
+            <div class="network-switcher" onclick="openNetworkModal()" title="Switch Network">
+                <div class="net-option active-testnet" id="netTestnetBtn">
+                    <div class="net-dot testnet"></div>
+                    Sepolia
+                </div>
+                <div class="net-option" id="netMainnetBtn">
+                    <div class="net-dot mainnet"></div>
+                    Mainnet
+                </div>
+            </div>
+            <button class="btn-exit" onclick="logout()">⏏</button>
         </div>
     </div>
 
     <!-- Balance -->
-    <div class="balance-card">
-        <div class="bal-label">ETH Balance</div>
+    <div class="balance-card" id="balanceCard">
+        <div class="bal-label" id="balLabel">ETH Balance · Sepolia Testnet</div>
         <div class="bal-amount" id="balAmount">
             <span id="balValue">—</span> <span class="bal-unit">ETH</span>
         </div>
@@ -705,7 +867,7 @@
         </div>
     </div>
 
-    <!-- Actions — 4 buttons now -->
+    <!-- Actions -->
     <div class="action-row">
         <button class="action-btn" onclick="togglePanel('panelSend')">
             <div class="action-icon">↗</div>Send
@@ -727,45 +889,38 @@
             <div class="panel-title">Send <span>Crypto</span></div>
             <button class="btn-close-panel" onclick="closePanel('panelSend')">✕</button>
         </div>
-
         <div class="field">
             <label>Select Token</label>
             <select class="token-select" id="sendTokenSelect" onchange="updateSendLabel()">
                 <option value="ETH">ETH — Ethereum</option>
             </select>
         </div>
-
         <div class="field">
             <label>Recipient Address</label>
             <div class="input-with-scan">
                 <input type="text" id="sendTo" placeholder="0x..."/>
-                <button class="btn-scan" onclick="openScanner()" title="Scan QR Code">📷</button>
+                <button class="btn-scan" onclick="openScanner()">📷</button>
             </div>
         </div>
-
         <div class="field" style="margin-top:12px;">
             <label id="sendAmountLabel">Amount (ETH)</label>
             <input type="number" id="sendAmount" placeholder="0.001" step="0.0001" min="0"/>
         </div>
-
         <button class="btn-send" onclick="sendFunds()" id="btnSend">Send →</button>
         <div class="tx-status" id="sendStatus"></div>
     </div>
 
-    <!-- RECEIVE / QR PANEL -->
+    <!-- RECEIVE PANEL -->
     <div class="panel" id="panelReceive">
         <div class="panel-header">
             <div class="panel-title">Receive <span>Crypto</span></div>
             <button class="btn-close-panel" onclick="closePanel('panelReceive')">✕</button>
         </div>
-
         <div class="qr-container">
             <div class="qr-note">Share your QR code or address to receive crypto</div>
             <div class="qr-box" id="qrCode"></div>
             <div class="qr-address" id="qrAddress"></div>
-            <button class="btn-primary" onclick="copyAddr()" style="max-width:200px;">
-                📋 Copy Address
-            </button>
+            <button class="btn-primary" onclick="copyAddr()" style="max-width:200px;">📋 Copy Address</button>
         </div>
     </div>
 
@@ -775,13 +930,10 @@
             <div class="panel-title">Scan <span>QR Code</span></div>
             <button class="btn-close-panel" onclick="closeScanner()">✕</button>
         </div>
-
         <div class="scanner-status" id="scannerStatus">Point your camera at a wallet QR code</div>
-
         <div class="scanner-container">
             <div id="qrScanner"></div>
         </div>
-
         <div class="alert error" id="scannerError"></div>
     </div>
 
@@ -801,12 +953,10 @@
             <div class="panel-title">Add <span>Token</span></div>
             <button class="btn-close-panel" onclick="closeAddToken()">✕</button>
         </div>
-
         <div class="field">
             <label>Token Contract Address</label>
             <input type="text" id="tokenContractAddr" placeholder="0x..."/>
         </div>
-
         <div id="tokenPreview" style="display:none; margin-bottom:16px;">
             <div class="token-item">
                 <div class="token-icon" id="previewIcon">🪙</div>
@@ -820,7 +970,6 @@
                 </div>
             </div>
         </div>
-
         <button class="btn-primary" onclick="lookupToken()" id="btnLookup">Look Up Token →</button>
         <button class="btn-secondary" id="btnAddConfirm" style="display:none;" onclick="confirmAddToken()">Add to Wallet ✓</button>
         <div class="alert error" id="tokenError"></div>
@@ -841,11 +990,39 @@
 </div>
 
 <script>
-const RPCS = [
-    "https://ethereum-sepolia-rpc.publicnode.com",
-    "https://sepolia.drpc.org",
-    "https://rpc2.sepolia.org"
-]
+// ── NETWORKS CONFIG ──
+const NETWORKS = {
+    testnet: {
+        name: "Sepolia Testnet",
+        shortName: "Sepolia",
+        rpcs: [
+            "https://ethereum-sepolia-rpc.publicnode.com",
+            "https://sepolia.drpc.org",
+            "https://rpc2.sepolia.org"
+        ],
+        explorer: "https://sepolia.etherscan.io",
+        explorerApi: "https://api-sepolia.etherscan.io",
+        tokens: [
+            { address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", symbol: "USDC", name: "USD Coin", decimals: 6, icon: "💵" },
+            { address: "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0", symbol: "USDT", name: "Tether USD", decimals: 6, icon: "💚" }
+        ]
+    },
+    mainnet: {
+        name: "Ethereum Mainnet",
+        shortName: "Mainnet",
+        rpcs: [
+            "https://eth.llamarpc.com",
+            "https://rpc.ankr.com/eth",
+            "https://ethereum.publicnode.com"
+        ],
+        explorer: "https://etherscan.io",
+        explorerApi: "https://api.etherscan.io",
+        tokens: [
+            { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", name: "USD Coin", decimals: 6, icon: "💵" },
+            { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", name: "Tether USD", decimals: 6, icon: "💚" }
+        ]
+    }
+}
 
 const ERC20_ABI = [
     "function balanceOf(address) view returns (uint256)",
@@ -853,11 +1030,6 @@ const ERC20_ABI = [
     "function decimals() view returns (uint8)",
     "function symbol() view returns (string)",
     "function name() view returns (string)"
-]
-
-const DEFAULT_TOKENS = [
-    { address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", symbol: "USDC", name: "USD Coin", decimals: 6, icon: "💵" },
-    { address: "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0", symbol: "USDT", name: "Tether USD", decimals: 6, icon: "💚" }
 ]
 
 let provider, wallet
@@ -869,6 +1041,9 @@ let confirmIndices = []
 let pendingToken = null
 let html5QrCode = null
 let qrGenerated = false
+let currentNetwork = "testnet"
+let pendingNetworkSwitch = "testnet"
+let currentMnemonic = null
 
 // ── SCREENS ──
 function showScreen(id) {
@@ -887,6 +1062,69 @@ function switchTab(tab) {
         document.querySelectorAll(".tab-btn")[1].classList.add("active")
         document.getElementById("paneCreate").classList.add("active")
     }
+}
+
+// ── NETWORK MODAL ──
+function openNetworkModal() {
+    selectNetwork(currentNetwork)
+    document.getElementById("networkModal").classList.add("active")
+}
+
+function closeNetworkModal() {
+    document.getElementById("networkModal").classList.remove("active")
+}
+
+function selectNetwork(net) {
+    pendingNetworkSwitch = net
+    document.getElementById("optTestnet").className = "network-option testnet-opt" + (net === "testnet" ? " selected-testnet" : "")
+    document.getElementById("optMainnet").className = "network-option mainnet-opt" + (net === "mainnet" ? " selected-mainnet" : "")
+    const warning = document.getElementById("mainnetWarning")
+    const confirmBtn = document.getElementById("btnConfirmNetwork")
+    if (net === "mainnet") {
+        warning.classList.add("show")
+        confirmBtn.className = "btn-modal-confirm mainnet"
+        confirmBtn.innerText = "Switch to Mainnet ⚠️"
+    } else {
+        warning.classList.remove("show")
+        confirmBtn.className = "btn-modal-confirm"
+        confirmBtn.innerText = "Switch Network"
+    }
+}
+
+async function confirmNetworkSwitch() {
+    if (pendingNetworkSwitch === currentNetwork) {
+        closeNetworkModal()
+        return
+    }
+    closeNetworkModal()
+    currentNetwork = pendingNetworkSwitch
+    updateNetworkUI()
+    // Reconnect wallet on new network
+    if (currentMnemonic) {
+        document.getElementById("balValue").innerText = "..."
+        document.getElementById("balAmount").classList.add("loading")
+        document.getElementById("connStatus").innerText = "Switching network..."
+        await loadWalletFromMnemonic(currentMnemonic)
+    }
+}
+
+function updateNetworkUI() {
+    const net = NETWORKS[currentNetwork]
+    const testnetBtn = document.getElementById("netTestnetBtn")
+    const mainnetBtn = document.getElementById("netMainnetBtn")
+
+    if (currentNetwork === "testnet") {
+        testnetBtn.className = "net-option active-testnet"
+        mainnetBtn.className = "net-option"
+        document.getElementById("balanceCard").classList.remove("mainnet-active")
+    } else {
+        testnetBtn.className = "net-option"
+        mainnetBtn.className = "net-option active-mainnet"
+        document.getElementById("balanceCard").classList.add("mainnet-active")
+    }
+
+    document.getElementById("balLabel").innerText = "ETH Balance · " + net.name
+    document.getElementById("connStatus").innerText = "✅ Connected · " + net.name
 }
 
 // ── CREATE ──
@@ -965,7 +1203,12 @@ function saveEncrypted(mnemonic, password) {
 
 // ── LOAD WALLET ──
 async function loadWalletFromMnemonic(mnemonic) {
-    for (let url of RPCS) {
+    currentMnemonic = mnemonic
+    const net = NETWORKS[currentNetwork]
+    provider = null
+    wallet = null
+
+    for (let url of net.rpcs) {
         try {
             provider = new ethers.JsonRpcProvider(url)
             await provider.getBlockNumber()
@@ -973,10 +1216,15 @@ async function loadWalletFromMnemonic(mnemonic) {
             break
         } catch(e) { console.log("RPC failed:", url) }
     }
+
     if (!wallet) throw new Error("Could not connect")
-    tokens = [...DEFAULT_TOKENS]
+
+    tokens = [...net.tokens]
+    qrGenerated = false
+
     document.getElementById("addrDisplay").innerText = wallet.address
-    document.getElementById("connStatus").innerText = "✅ Connected · Sepolia Testnet"
+    updateNetworkUI()
+
     showScreen("screenWallet")
     await refreshAll()
     renderTokenList()
@@ -997,7 +1245,7 @@ async function refreshBalance() {
         const eth = parseFloat(ethers.formatEther(bal)).toFixed(4)
         document.getElementById("balValue").innerText = eth
         document.getElementById("balAmount").classList.remove("loading")
-        document.getElementById("balSub").innerText = "Sepolia Testnet · Updated just now"
+        document.getElementById("balSub").innerText = NETWORKS[currentNetwork].name + " · Updated just now"
     } catch(e) {
         document.getElementById("balValue").innerText = "Error"
         document.getElementById("balAmount").classList.remove("loading")
@@ -1015,66 +1263,49 @@ async function refreshTokenBalances() {
     renderTokenList()
 }
 
-// ── QR CODE — RECEIVE ──
+// ── QR RECEIVE ──
 function openQRPanel() {
     const panel = document.getElementById("panelReceive")
     panel.classList.add("active")
-
     if (!qrGenerated && wallet) {
-        // Clear previous QR
         const qrEl = document.getElementById("qrCode")
         qrEl.innerHTML = ""
-
-        // Generate QR from wallet address
         new QRCode(qrEl, {
             text: wallet.address,
-            width: 180,
-            height: 180,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
+            width: 180, height: 180,
+            colorDark: "#000000", colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
         })
-
         document.getElementById("qrAddress").innerText = wallet.address
         qrGenerated = true
     }
 }
 
-// ── QR CODE — SCAN ──
+// ── QR SCAN ──
 function openScanner() {
-    // Close send panel temporarily and open scanner
     document.getElementById("panelScanner").classList.add("active")
     document.getElementById("scannerError").classList.remove("show")
     document.getElementById("scannerStatus").innerText = "Point your camera at a wallet QR code"
-
-    // Start scanner
     html5QrCode = new Html5Qrcode("qrScanner")
-
     html5QrCode.start(
-        { facingMode: "environment" }, // use back camera
+        { facingMode: "environment" },
         { fps: 10, qrbox: { width: 200, height: 200 } },
         (decodedText) => {
-            // Success — extract address
             let address = decodedText.trim()
-
-            // Handle ethereum: prefix
             if (address.startsWith("ethereum:")) {
                 address = address.split("ethereum:")[1].split("@")[0].split("?")[0]
             }
-
             if (ethers.isAddress(address)) {
                 document.getElementById("sendTo").value = address
-                document.getElementById("scannerStatus").innerText = "✅ Address scanned successfully!"
+                document.getElementById("scannerStatus").innerText = "✅ Address scanned!"
                 closeScanner()
             } else {
-                document.getElementById("scannerStatus").innerText = "⚠️ QR code found but not a valid address. Try again."
+                document.getElementById("scannerStatus").innerText = "⚠️ Not a valid address. Try again."
             }
         },
-        (error) => {
-            // Scanning — ignore per-frame errors
-        }
-    ).catch(err => {
-        showAlert(document.getElementById("scannerError"), "Camera access denied. Please allow camera permission and try again.")
+        () => {}
+    ).catch(() => {
+        showAlert(document.getElementById("scannerError"), "Camera access denied. Please allow camera permission.")
     })
 }
 
@@ -1092,13 +1323,10 @@ function closeScanner() {
     }
 }
 
-// ── TOKEN LIST ──
+// ── TOKENS ──
 function renderTokenList() {
     const el = document.getElementById("tokenList")
-    if (!tokens.length) {
-        el.innerHTML = '<div class="empty-state">No tokens added yet</div>'
-        return
-    }
+    if (!tokens.length) { el.innerHTML = '<div class="empty-state">No tokens added yet</div>'; return }
     el.innerHTML = tokens.map(t => `
         <div class="token-item">
             <div class="token-icon">${t.icon || "🪙"}</div>
@@ -1138,13 +1366,11 @@ function updateSendLabel() {
     }
 }
 
-// ── LOOK UP TOKEN ──
 async function lookupToken() {
     const addr = document.getElementById("tokenContractAddr").value.trim()
     const err = document.getElementById("tokenError")
     const success = document.getElementById("tokenSuccess")
-    err.classList.remove("show")
-    success.classList.remove("show")
+    err.classList.remove("show"); success.classList.remove("show")
     if (!ethers.isAddress(addr)) { showAlert(err, "Invalid contract address"); return }
     document.getElementById("btnLookup").innerText = "Looking up..."
     document.getElementById("tokenPreview").style.display = "none"
@@ -1164,7 +1390,7 @@ async function lookupToken() {
         document.getElementById("tokenPreview").style.display = "block"
         document.getElementById("btnAddConfirm").style.display = "block"
     } catch(e) {
-        showAlert(err, "Could not find token. Make sure the address is a valid ERC-20 contract on Sepolia.")
+        showAlert(err, "Could not find token. Make sure the address is a valid ERC-20 contract.")
     }
     document.getElementById("btnLookup").innerText = "Look Up Token →"
 }
@@ -1190,14 +1416,11 @@ async function sendFunds() {
     const amount = document.getElementById("sendAmount").value.trim()
     const statusEl = document.getElementById("sendStatus")
     const btn = document.getElementById("btnSend")
-
     if (!to || !amount) { showTxStatus(statusEl, "error", "❌ Please fill in all fields"); return }
     if (!ethers.isAddress(to)) { showTxStatus(statusEl, "error", "❌ Invalid Ethereum address"); return }
     if (parseFloat(amount) <= 0) { showTxStatus(statusEl, "error", "❌ Amount must be greater than 0"); return }
-
     try {
-        btn.disabled = true
-        btn.innerText = "Sending..."
+        btn.disabled = true; btn.innerText = "Sending..."
         showTxStatus(statusEl, "pending", "⏳ Broadcasting transaction...")
         let tx
         if (tokenAddress === "ETH") {
@@ -1221,18 +1444,17 @@ async function sendFunds() {
     } catch(e) {
         showTxStatus(statusEl, "error", "❌ " + e.message)
     } finally {
-        btn.disabled = false
-        btn.innerText = "Send →"
+        btn.disabled = false; btn.innerText = "Send →"
     }
 }
 
 // ── HISTORY ──
 async function loadHistory() {
     const btn = document.getElementById("btnHistory")
-    btn.classList.add("spinning")
-    btn.innerText = "↻"
+    btn.classList.add("spinning"); btn.innerText = "↻"
     try {
-        const url = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${wallet.address}&startblock=0&endblock=99999999&sort=desc&offset=10&page=1`
+        const net = NETWORKS[currentNetwork]
+        const url = `${net.explorerApi}/api?module=account&action=txlist&address=${wallet.address}&startblock=0&endblock=99999999&sort=desc&offset=10&page=1`
         const res = await fetch(url)
         const data = await res.json()
         if (data.result && Array.isArray(data.result)) {
@@ -1245,16 +1467,13 @@ async function loadHistory() {
             renderHistory()
         }
     } catch(e) { console.log("History failed") }
-    btn.classList.remove("spinning")
-    btn.innerText = "↻ Load"
+    btn.classList.remove("spinning"); btn.innerText = "↻ Load"
 }
 
 function renderHistory() {
     const el = document.getElementById("txList")
-    if (!txHistory.length) {
-        el.innerHTML = '<div class="empty-state">No transactions yet</div>'
-        return
-    }
+    const net = NETWORKS[currentNetwork]
+    if (!txHistory.length) { el.innerHTML = '<div class="empty-state">No transactions yet</div>'; return }
     el.innerHTML = txHistory.map(tx => `
         <div class="tx-item">
             <div class="tx-icon ${tx.type}">${tx.type === "sent" ? "↗" : "↙"}</div>
@@ -1308,11 +1527,12 @@ function showTxStatus(el, type, msg) {
     if (msg.includes("🔗")) {
         const hash = msg.split("🔗 ")[1]
         if (hash && hash.startsWith("0x")) {
+            const net = NETWORKS[currentNetwork]
             const link = document.createElement("a")
-            link.href = "https://sepolia.etherscan.io/tx/" + hash
+            link.href = `${net.explorer}/tx/${hash}`
             link.target = "_blank"
             link.className = "etherscan-link"
-            link.innerText = "View on Etherscan ↗"
+            link.innerText = "View on Explorer ↗"
             el.appendChild(document.createElement("br"))
             el.appendChild(link)
         }
@@ -1323,7 +1543,8 @@ function logout() {
     wallet = null; provider = null
     txHistory = []; tokens = []
     pendingMnemonic = null; pendingPassword = null
-    qrGenerated = false
+    currentMnemonic = null; qrGenerated = false
+    currentNetwork = "testnet"
     closeScanner()
     document.getElementById("recoverPhrase").value = ""
     document.getElementById("recoverPassword").value = ""
