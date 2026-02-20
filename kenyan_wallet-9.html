@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SavannahPay</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #D4A017;
+            --amber: #C17B2F;
+            --deep: #1A1208;
+            --soil: #231A0C;
+            --brown: #3D2B0F;
+            --sand: #F5E6C8;
+            --mainnet: #4CAF50;
+            --testnet: #D4A017;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Mono', monospace;
+            background: var(--deep);
+            min-height: 100vh;
+            color: var(--sand);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(212,160,23,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(193,123,47,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(45,80,22,0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .screen { display: none; position: relative; z-index: 1; }
+        .screen.active { display: flex; }
+
+        .center-screen {
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--soil);
+            border: 1px solid rgba(212,160,23,0.2);
+            border-radius: 28px;
+            padding: 36px 28px;
+            width: 100%;
+            max-width: 420px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .logo-block { text-align: center; margin-bottom: 28px; }
+
+        .logo-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin: 0 auto 14px;
+            box-shadow: 0 8px 24px rgba(212,160,23,0.3);
+        }
+
+        .logo-block h1 { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; }
+        .logo-block h1 span { color: var(--gold); }
+        .logo-block p { font-size: 12px; color: rgba(245,230,200,0.4); margin-top: 4px; }
+
+        .tabs {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 6px; background: rgba(0,0,0,0.2);
+            padding: 4px; border-radius: 12px; margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 10px; border: none; border-radius: 9px;
+            font-family: 'DM Mono', monospace; font-size: 12px;
+            cursor: pointer; transition: all 0.3s;
+            background: transparent; color: rgba(245,230,200,0.4);
+            width: 100%; margin: 0;
+        }
+
+        .tab-btn.active {
+            background: var(--brown); color: var(--gold);
+            border: 1px solid rgba(212,160,23,0.2);
+        }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        .field { margin-bottom: 16px; }
+
+        label {
+            display: block; font-size: 11px;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: rgba(245,230,200,0.4); margin-bottom: 8px;
+        }
+
+        input[type="text"], input[type="password"],
+        input[type="number"], textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 12px;
+            padding: 13px 16px;
+            color: var(--sand);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s;
+            resize: none;
+        }
+
+        input:focus, textarea:focus {
+            border-color: rgba(212,160,23,0.5);
+            background: rgba(212,160,23,0.05);
+            box-shadow: 0 0 0 3px rgba(212,160,23,0.08);
+        }
+
+        input::placeholder, textarea::placeholder { color: rgba(245,230,200,0.2); }
+
+        .btn-primary {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border: none; border-radius: 14px;
+            color: var(--deep); font-family: 'Syne', sans-serif;
+            font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.3s;
+            margin: 0; letter-spacing: 0.3px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(212,160,23,0.35);
+        }
+
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .btn-secondary {
+            width: 100%; padding: 13px;
+            background: transparent;
+            border: 1px solid rgba(212,160,23,0.25);
+            border-radius: 14px; color: var(--gold);
+            font-family: 'DM Mono', monospace; font-size: 13px;
+            cursor: pointer; transition: all 0.3s; margin: 8px 0 0;
+        }
+
+        .btn-secondary:hover { background: rgba(212,160,23,0.08); }
+
+        .alert {
+            padding: 12px 14px; border-radius: 10px;
+            font-size: 12px; line-height: 1.6;
+            margin-top: 12px; display: none; word-break: break-all;
+        }
+
+        .alert.show { display: block; }
+        .alert.error { background: rgba(229,57,53,0.1); border: 1px solid rgba(229,57,53,0.2); color: #EF9A9A; }
+        .alert.warning { background: rgba(255,143,0,0.1); border: 1px solid rgba(255,143,0,0.2); color: #FFB74D; }
+        .alert.success { background: rgba(76,175,80,0.1); border: 1px solid rgba(76,175,80,0.2); color: #81C784; }
+        .alert.info { background: rgba(212,160,23,0.08); border: 1px solid rgba(212,160,23,0.15); color: rgba(245,230,200,0.7); }
+
+        .security-note {
+            margin-top: 20px; padding: 12px;
+            background: rgba(212,160,23,0.05);
+            border: 1px solid rgba(212,160,23,0.1);
+            border-radius: 10px; font-size: 11px;
+            color: rgba(245,230,200,0.35);
+            text-align: center; line-height: 1.6;
+        }
+
+        .seed-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 8px; margin: 16px 0;
+        }
+
+        .seed-word {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 10px; padding: 10px 8px; text-align: center;
+        }
+
+        .seed-word .num { font-size: 9px; color: rgba(245,230,200,0.3); display: block; margin-bottom: 3px; }
+        .seed-word .word { font-size: 13px; color: var(--sand); font-weight: 500; }
+
+        .confirm-prompt {
+            background: rgba(212,160,23,0.06);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 14px; padding: 18px; margin-bottom: 16px; text-align: center;
+        }
+
+        .confirm-prompt p { font-size: 13px; color: rgba(245,230,200,0.6); margin-bottom: 12px; }
+        .confirm-prompt strong { font-size: 16px; color: var(--gold); font-family: 'Syne', sans-serif; }
+
+        /* WALLET SCREEN */
+        .wallet-wrap { flex-direction: column; min-height: 100vh; }
+
+        .wallet-inner {
+            max-width: 480px; width: 100%;
+            margin: 0 auto; padding: 24px 20px 60px;
+        }
+
+        .header {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            animation: fadeDown 0.5s ease both;
+        }
+
+        .header-logo { display: flex; align-items: center; gap: 10px; }
+
+        .header-logo-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border-radius: 10px; display: flex;
+            align-items: center; justify-content: center; font-size: 16px;
+        }
+
+        .header-logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; }
+        .header-logo-text span { color: var(--gold); }
+        .header-right { display: flex; align-items: center; gap: 8px; }
+
+        /* NETWORK SWITCHER */
+        .network-switcher {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 3px;
+            border: 1px solid rgba(212,160,23,0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+            gap: 2px;
+        }
+
+        .network-switcher:hover {
+            border-color: rgba(212,160,23,0.35);
+        }
+
+        .net-option {
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 10px;
+            font-family: 'DM Mono', monospace;
+            transition: all 0.3s;
+            color: rgba(245,230,200,0.35);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .net-option.active-testnet {
+            background: rgba(212,160,23,0.15);
+            color: var(--gold);
+        }
+
+        .net-option.active-mainnet {
+            background: rgba(76,175,80,0.15);
+            color: #81C784;
+        }
+
+        .net-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .net-dot.testnet { background: var(--gold); }
+        .net-dot.mainnet { background: #4CAF50; }
+
+        .btn-exit {
+            background: rgba(229,57,53,0.1);
+            border: 1px solid rgba(229,57,53,0.2);
+            border-radius: 10px; color: #EF9A9A;
+            padding: 6px 12px; font-size: 11px;
+            cursor: pointer; font-family: 'DM Mono', monospace;
+            transition: all 0.2s; width: auto; margin: 0;
+        }
+
+        .btn-exit:hover { background: rgba(229,57,53,0.2); }
+
+        /* NETWORK SWITCH MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--soil);
+            border: 1px solid rgba(212,160,23,0.2);
+            border-radius: 24px;
+            padding: 28px;
+            width: 100%;
+            max-width: 380px;
+            animation: fadeUp 0.3s ease both;
+        }
+
+        .modal h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal h3 span { color: var(--gold); }
+
+        .modal p {
+            font-size: 12px;
+            color: rgba(245,230,200,0.5);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .network-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .network-option {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(212,160,23,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .network-option:hover {
+            border-color: rgba(212,160,23,0.3);
+            background: rgba(212,160,23,0.05);
+        }
+
+        .network-option.selected-testnet {
+            border-color: var(--gold);
+            background: rgba(212,160,23,0.08);
+        }
+
+        .network-option.selected-mainnet {
+            border-color: #4CAF50;
+            background: rgba(76,175,80,0.08);
+        }
+
+        .network-option .net-icon { font-size: 28px; margin-bottom: 8px; }
+
+        .network-option .net-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .network-option .net-desc {
+            font-size: 10px;
+            color: rgba(245,230,200,0.4);
+            line-height: 1.4;
+        }
+
+        .network-option.testnet-opt .net-name { color: var(--gold); }
+        .network-option.mainnet-opt .net-name { color: #81C784; }
+
+        .mainnet-warning {
+            background: rgba(229,57,53,0.08);
+            border: 1px solid rgba(229,57,53,0.15);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 11px;
+            color: #EF9A9A;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .mainnet-warning.show { display: block; }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-modal-cancel {
+            padding: 13px;
+            background: transparent;
+            border: 1px solid rgba(212,160,23,0.2);
+            border-radius: 12px;
+            color: rgba(245,230,200,0.5);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin: 0;
+        }
+
+        .btn-modal-cancel:hover { background: rgba(255,255,255,0.05); }
+
+        .btn-modal-confirm {
+            padding: 13px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border: none;
+            border-radius: 12px;
+            color: var(--deep);
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin: 0;
+        }
+
+        .btn-modal-confirm:hover { transform: translateY(-1px); }
+        .btn-modal-confirm.mainnet { background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; }
+
+        /* BALANCE CARD */
+        .balance-card {
+            background: linear-gradient(135deg, var(--brown), var(--soil));
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 24px; padding: 28px 24px;
+            margin-bottom: 14px; position: relative;
+            overflow: hidden; animation: fadeUp 0.5s ease 0.1s both;
+            transition: border-color 0.3s;
+        }
+
+        .balance-card.mainnet-active {
+            border-color: rgba(76,175,80,0.2);
+        }
+
+        .balance-card::after {
+            content: '🌍'; position: absolute;
+            bottom: -12px; right: 16px;
+            font-size: 90px; opacity: 0.04; transform: rotate(-15deg);
+        }
+
+        .bal-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(245,230,200,0.4); margin-bottom: 10px; }
+
+        .bal-amount {
+            font-family: 'Syne', sans-serif; font-size: 44px;
+            font-weight: 800; line-height: 1; transition: opacity 0.3s;
+        }
+
+        .bal-amount.loading { opacity: 0.3; }
+        .bal-unit { font-size: 17px; color: var(--gold); }
+        .bal-sub { font-size: 13px; color: rgba(245,230,200,0.35); margin-top: 4px; margin-bottom: 20px; }
+
+        .addr-row {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(212,160,23,0.1);
+            border-radius: 12px; padding: 10px 14px;
+        }
+
+        .addr-text { flex: 1; font-size: 11px; color: rgba(245,230,200,0.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .btn-copy {
+            background: none; border: none; color: var(--gold);
+            cursor: pointer; font-size: 13px; padding: 3px;
+            border-radius: 6px; transition: all 0.2s; width: auto; margin: 0;
+        }
+
+        .action-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px; margin-bottom: 20px;
+            animation: fadeUp 0.5s ease 0.2s both;
+        }
+
+        .action-btn {
+            background: var(--soil);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 16px; padding: 12px 8px;
+            cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; gap: 6px; transition: all 0.3s;
+            color: var(--sand); font-family: 'DM Mono', monospace;
+            font-size: 10px; width: 100%; margin: 0;
+        }
+
+        .action-btn:hover {
+            background: var(--brown);
+            border-color: rgba(212,160,23,0.35);
+            transform: translateY(-2px);
+        }
+
+        .action-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border-radius: 10px; display: flex;
+            align-items: center; justify-content: center; font-size: 14px;
+        }
+
+        .panel {
+            background: var(--soil);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 22px; padding: 22px;
+            margin-bottom: 14px; display: none;
+            animation: fadeUp 0.3s ease both;
+        }
+
+        .panel.active { display: block; }
+
+        .panel-header {
+            display: flex; align-items: center;
+            justify-content: space-between; margin-bottom: 18px;
+        }
+
+        .panel-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin: 0; }
+        .panel-title span { color: var(--gold); }
+
+        .btn-close-panel {
+            background: none; border: none;
+            color: rgba(245,230,200,0.3); font-size: 18px;
+            cursor: pointer; width: auto; margin: 0;
+            padding: 4px 8px; border-radius: 8px; transition: all 0.2s; line-height: 1;
+        }
+
+        .btn-close-panel:hover { background: rgba(229,57,53,0.1); color: #EF9A9A; }
+
+        .token-select {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 12px; padding: 13px 16px;
+            color: var(--sand); font-family: 'DM Mono', monospace;
+            font-size: 13px; outline: none; cursor: pointer;
+            margin-bottom: 16px; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23D4A017' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .input-with-scan { display: flex; gap: 8px; align-items: center; }
+        .input-with-scan input { flex: 1; margin-bottom: 0; }
+
+        .btn-scan {
+            background: rgba(212,160,23,0.1);
+            border: 1px solid rgba(212,160,23,0.25);
+            border-radius: 12px; color: var(--gold);
+            padding: 13px 14px; font-size: 18px;
+            cursor: pointer; transition: all 0.2s;
+            width: auto; margin: 0; flex-shrink: 0;
+        }
+
+        .btn-scan:hover { background: rgba(212,160,23,0.2); }
+
+        .btn-send {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            border: none; border-radius: 13px;
+            color: var(--deep); font-family: 'Syne', sans-serif;
+            font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: all 0.3s; margin-top: 16px;
+        }
+
+        .btn-send:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(212,160,23,0.3);
+        }
+
+        .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .tx-status {
+            margin-top: 14px; padding: 12px 14px;
+            border-radius: 11px; font-size: 12px;
+            line-height: 1.6; word-break: break-all; display: none;
+        }
+
+        .tx-status.show { display: block; }
+        .tx-status.success { background: rgba(76,175,80,0.1); border: 1px solid rgba(76,175,80,0.2); color: #81C784; }
+        .tx-status.error { background: rgba(229,57,53,0.1); border: 1px solid rgba(229,57,53,0.2); color: #EF9A9A; }
+        .tx-status.pending { background: rgba(255,143,0,0.1); border: 1px solid rgba(255,143,0,0.2); color: #FFB74D; }
+
+        .qr-container {
+            display: flex; flex-direction: column;
+            align-items: center; padding: 20px 0; gap: 16px;
+        }
+
+        .qr-box {
+            background: white; padding: 16px;
+            border-radius: 16px; display: inline-block;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .qr-address {
+            font-size: 11px; color: rgba(245,230,200,0.4);
+            text-align: center; word-break: break-all; line-height: 1.6; padding: 0 8px;
+        }
+
+        .qr-note { font-size: 12px; color: rgba(245,230,200,0.5); text-align: center; line-height: 1.6; }
+
+        .scanner-container {
+            border-radius: 14px; overflow: hidden;
+            border: 2px solid rgba(212,160,23,0.3);
+            margin-bottom: 16px;
+        }
+
+        #qrScanner { width: 100%; }
+
+        .scanner-status {
+            text-align: center; font-size: 12px;
+            color: rgba(245,230,200,0.5); margin-bottom: 12px;
+        }
+
+        .token-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 0; border-bottom: 1px solid rgba(212,160,23,0.06);
+        }
+
+        .token-item:last-child { border-bottom: none; }
+
+        .token-icon {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+            border: 1px solid rgba(212,160,23,0.2);
+            background: rgba(212,160,23,0.08);
+        }
+
+        .token-details { flex: 1; min-width: 0; }
+        .token-name { font-size: 13px; font-weight: 500; color: var(--sand); }
+        .token-addr { font-size: 10px; color: rgba(245,230,200,0.3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .token-balance { text-align: right; }
+        .token-bal-amount { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--sand); }
+        .token-bal-symbol { font-size: 10px; color: var(--gold); margin-top: 2px; }
+
+        .btn-add-token {
+            width: 100%; padding: 12px; background: transparent;
+            border: 1px dashed rgba(212,160,23,0.25);
+            border-radius: 12px; color: rgba(245,230,200,0.4);
+            font-family: 'DM Mono', monospace; font-size: 12px;
+            cursor: pointer; transition: all 0.3s; margin-top: 8px;
+        }
+
+        .btn-add-token:hover { border-color: rgba(212,160,23,0.5); color: var(--gold); background: rgba(212,160,23,0.05); }
+
+        .history-card {
+            background: var(--soil);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: 22px; padding: 22px;
+            animation: fadeUp 0.5s ease 0.35s both;
+        }
+
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+
+        .btn-load {
+            background: none; border: 1px solid rgba(212,160,23,0.2);
+            border-radius: 9px; color: var(--gold);
+            padding: 7px 13px; font-size: 11px;
+            cursor: pointer; font-family: 'DM Mono', monospace;
+            transition: all 0.2s; width: auto; margin: 0;
+        }
+
+        .btn-load:hover { background: rgba(212,160,23,0.1); }
+        .btn-load.spinning { animation: spin 1s linear infinite; }
+
+        .tx-item {
+            display: flex; align-items: center; gap: 11px;
+            padding: 11px 0; border-bottom: 1px solid rgba(212,160,23,0.06);
+        }
+
+        .tx-item:last-child { border-bottom: none; }
+
+        .tx-icon {
+            width: 34px; height: 34px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; flex-shrink: 0;
+        }
+
+        .tx-icon.sent { background: rgba(229,57,53,0.1); border: 1px solid rgba(229,57,53,0.2); }
+        .tx-icon.received { background: rgba(76,175,80,0.1); border: 1px solid rgba(76,175,80,0.2); }
+
+        .tx-details { flex: 1; min-width: 0; }
+        .tx-type { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+        .tx-hash { font-size: 10px; color: rgba(245,230,200,0.3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .tx-amount { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+        .tx-amount.sent { color: #EF9A9A; }
+        .tx-amount.received { color: #81C784; }
+
+        .empty-state { text-align: center; padding: 20px; color: rgba(245,230,200,0.2); font-size: 12px; }
+        .conn-status { font-size: 10px; color: rgba(245,230,200,0.25); text-align: center; margin-top: 20px; }
+
+        .etherscan-link {
+            color: var(--gold); text-decoration: none;
+            font-size: 11px; display: inline-flex;
+            align-items: center; gap: 4px; margin-top: 6px;
+        }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<!-- ══ NETWORK SWITCH MODAL ══ -->
+<div class="modal-overlay" id="networkModal">
+    <div class="modal">
+        <h3>Switch <span>Network</span></h3>
+        <p>Choose which Ethereum network to connect to. Testnet uses fake ETH for practice. Mainnet uses real ETH.</p>
+
+        <div class="network-options">
+            <div class="network-option testnet-opt selected-testnet" id="optTestnet" onclick="selectNetwork('testnet')">
+                <div class="net-icon">🧪</div>
+                <div class="net-name">Sepolia</div>
+                <div class="net-desc">Testnet<br/>Free fake ETH</div>
+            </div>
+            <div class="network-option mainnet-opt" id="optMainnet" onclick="selectNetwork('mainnet')">
+                <div class="net-icon">🌍</div>
+                <div class="net-name">Mainnet</div>
+                <div class="net-desc">Real ETH<br/>Real money</div>
+            </div>
+        </div>
+
+        <div class="mainnet-warning" id="mainnetWarning">
+            ⚠️ You are switching to Mainnet. This uses REAL ETH with real monetary value. Transactions cannot be reversed. Make sure you know what you are doing.
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn-modal-cancel" onclick="closeNetworkModal()">Cancel</button>
+            <button class="btn-modal-confirm" id="btnConfirmNetwork" onclick="confirmNetworkSwitch()">Switch Network</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ SCREEN 1: LOGIN ══ -->
+<div class="screen active center-screen" id="screenLogin">
+    <div class="card">
+        <div class="logo-block">
+            <div class="logo-icon">🦁</div>
+            <h1>Savannah<span>Pay</span></h1>
+            <p>Your African Crypto Wallet</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('recover')">Recover Wallet</button>
+            <button class="tab-btn" onclick="switchTab('create')">New Wallet</button>
+        </div>
+
+        <div class="tab-pane active" id="paneRecover">
+            <div class="field">
+                <label>Seed Phrase (12 words)</label>
+                <textarea id="recoverPhrase" rows="3" placeholder="Enter your 12 words separated by spaces..."></textarea>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" id="recoverPassword" placeholder="Your wallet password"/>
+            </div>
+            <button class="btn-primary" onclick="recoverWallet()">Access Wallet →</button>
+            <div class="alert error" id="recoverError"></div>
+        </div>
+
+        <div class="tab-pane" id="paneCreate">
+            <div class="field">
+                <label>Create Password</label>
+                <input type="password" id="createPassword" placeholder="Choose a strong password"/>
+            </div>
+            <div class="field">
+                <label>Confirm Password</label>
+                <input type="password" id="createPasswordConfirm" placeholder="Confirm your password"/>
+            </div>
+            <button class="btn-primary" onclick="startCreate()">Generate Seed Phrase →</button>
+            <div class="alert error" id="createError"></div>
+        </div>
+
+        <div class="security-note">
+            🔒 Your seed phrase and keys never leave your device. We have zero access to your funds.
+        </div>
+    </div>
+</div>
+
+<!-- ══ SCREEN 2: SHOW SEED ══ -->
+<div class="screen center-screen" id="screenSeed">
+    <div class="card">
+        <div class="logo-block">
+            <div class="logo-icon">📋</div>
+            <h1>Your <span>Seed Phrase</span></h1>
+            <p>Write these 12 words down in order</p>
+        </div>
+        <div class="alert warning show">⚠️ Write on paper. Never screenshot. Never share with anyone.</div>
+        <div class="seed-grid" id="seedGrid"></div>
+        <div class="alert info show">This is the ONLY time you will see your seed phrase.</div>
+        <button class="btn-primary" onclick="goToConfirm()" style="margin-top:16px;">I've Written It Down →</button>
+    </div>
+</div>
+
+<!-- ══ SCREEN 3: CONFIRM SEED ══ -->
+<div class="screen center-screen" id="screenConfirm">
+    <div class="card">
+        <div class="logo-block">
+            <div class="logo-icon">✅</div>
+            <h1>Confirm <span>Backup</span></h1>
+            <p>Prove you wrote your seed phrase down</p>
+        </div>
+        <div class="confirm-prompt">
+            <p>What is word number <strong id="confirmNum1">?</strong>?</p>
+            <input type="text" id="confirmInput1" placeholder="Enter the word..."/>
+        </div>
+        <div class="confirm-prompt">
+            <p>What is word number <strong id="confirmNum2">?</strong>?</p>
+            <input type="text" id="confirmInput2" placeholder="Enter the word..."/>
+        </div>
+        <button class="btn-primary" onclick="checkConfirm()">Verify & Enter Wallet →</button>
+        <button class="btn-secondary" onclick="showScreen('screenSeed')">← Go Back</button>
+        <div class="alert error" id="confirmError"></div>
+    </div>
+</div>
+
+<!-- ══ SCREEN 4: WALLET ══ -->
+<div class="screen wallet-wrap" id="screenWallet">
+<div class="wallet-inner">
+
+    <div class="header">
+        <div class="header-logo">
+            <div class="header-logo-icon">🦁</div>
+            <div class="header-logo-text">Savannah<span>Pay</span></div>
+        </div>
+        <div class="header-right">
+            <!-- NETWORK SWITCHER -->
+            <div class="network-switcher" onclick="openNetworkModal()" title="Switch Network">
+                <div class="net-option active-testnet" id="netTestnetBtn">
+                    <div class="net-dot testnet"></div>
+                    Sepolia
+                </div>
+                <div class="net-option" id="netMainnetBtn">
+                    <div class="net-dot mainnet"></div>
+                    Mainnet
+                </div>
+            </div>
+            <button class="btn-exit" onclick="logout()">⏏</button>
+        </div>
+    </div>
+
+    <!-- Balance -->
+    <div class="balance-card" id="balanceCard">
+        <div class="bal-label" id="balLabel">ETH Balance · Sepolia Testnet</div>
+        <div class="bal-amount" id="balAmount">
+            <span id="balValue">—</span> <span class="bal-unit">ETH</span>
+        </div>
+        <div class="bal-sub" id="balSub">Tap refresh to load</div>
+        <div class="addr-row">
+            <div class="addr-text" id="addrDisplay">Loading...</div>
+            <button class="btn-copy" onclick="copyAddr()">📋</button>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-row">
+        <button class="action-btn" onclick="togglePanel('panelSend')">
+            <div class="action-icon">↗</div>Send
+        </button>
+        <button class="action-btn" onclick="openQRPanel()">
+            <div class="action-icon">▦</div>Receive
+        </button>
+        <button class="action-btn" onclick="togglePanel('panelTokens')">
+            <div class="action-icon">🪙</div>Tokens
+        </button>
+        <button class="action-btn" onclick="refreshAll()">
+            <div class="action-icon">⟳</div>Refresh
+        </button>
+    </div>
+
+    <!-- SEND PANEL -->
+    <div class="panel" id="panelSend">
+        <div class="panel-header">
+            <div class="panel-title">Send <span>Crypto</span></div>
+            <button class="btn-close-panel" onclick="closePanel('panelSend')">✕</button>
+        </div>
+        <div class="field">
+            <label>Select Token</label>
+            <select class="token-select" id="sendTokenSelect" onchange="updateSendLabel()">
+                <option value="ETH">ETH — Ethereum</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Recipient Address</label>
+            <div class="input-with-scan">
+                <input type="text" id="sendTo" placeholder="0x..."/>
+                <button class="btn-scan" onclick="openScanner()">📷</button>
+            </div>
+        </div>
+        <div class="field" style="margin-top:12px;">
+            <label id="sendAmountLabel">Amount (ETH)</label>
+            <input type="number" id="sendAmount" placeholder="0.001" step="0.0001" min="0"/>
+        </div>
+        <button class="btn-send" onclick="sendFunds()" id="btnSend">Send →</button>
+        <div class="tx-status" id="sendStatus"></div>
+    </div>
+
+    <!-- RECEIVE PANEL -->
+    <div class="panel" id="panelReceive">
+        <div class="panel-header">
+            <div class="panel-title">Receive <span>Crypto</span></div>
+            <button class="btn-close-panel" onclick="closePanel('panelReceive')">✕</button>
+        </div>
+        <div class="qr-container">
+            <div class="qr-note">Share your QR code or address to receive crypto</div>
+            <div class="qr-box" id="qrCode"></div>
+            <div class="qr-address" id="qrAddress"></div>
+            <button class="btn-primary" onclick="copyAddr()" style="max-width:200px;">📋 Copy Address</button>
+        </div>
+    </div>
+
+    <!-- SCANNER PANEL -->
+    <div class="panel" id="panelScanner">
+        <div class="panel-header">
+            <div class="panel-title">Scan <span>QR Code</span></div>
+            <button class="btn-close-panel" onclick="closeScanner()">✕</button>
+        </div>
+        <div class="scanner-status" id="scannerStatus">Point your camera at a wallet QR code</div>
+        <div class="scanner-container">
+            <div id="qrScanner"></div>
+        </div>
+        <div class="alert error" id="scannerError"></div>
+    </div>
+
+    <!-- TOKENS PANEL -->
+    <div class="panel" id="panelTokens">
+        <div class="panel-header">
+            <div class="panel-title">My <span>Tokens</span></div>
+            <button class="btn-close-panel" onclick="closePanel('panelTokens')">✕</button>
+        </div>
+        <div id="tokenList"><div class="empty-state">No tokens added yet</div></div>
+        <button class="btn-add-token" onclick="openAddToken()">+ Add Token</button>
+    </div>
+
+    <!-- ADD TOKEN PANEL -->
+    <div class="panel" id="panelAddToken">
+        <div class="panel-header">
+            <div class="panel-title">Add <span>Token</span></div>
+            <button class="btn-close-panel" onclick="closeAddToken()">✕</button>
+        </div>
+        <div class="field">
+            <label>Token Contract Address</label>
+            <input type="text" id="tokenContractAddr" placeholder="0x..."/>
+        </div>
+        <div id="tokenPreview" style="display:none; margin-bottom:16px;">
+            <div class="token-item">
+                <div class="token-icon" id="previewIcon">🪙</div>
+                <div class="token-details">
+                    <div class="token-name" id="previewName">—</div>
+                    <div class="token-addr" id="previewAddr"></div>
+                </div>
+                <div class="token-balance">
+                    <div class="token-bal-amount" id="previewBalance">—</div>
+                    <div class="token-bal-symbol" id="previewSymbol"></div>
+                </div>
+            </div>
+        </div>
+        <button class="btn-primary" onclick="lookupToken()" id="btnLookup">Look Up Token →</button>
+        <button class="btn-secondary" id="btnAddConfirm" style="display:none;" onclick="confirmAddToken()">Add to Wallet ✓</button>
+        <div class="alert error" id="tokenError"></div>
+        <div class="alert success" id="tokenSuccess"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="history-card">
+        <div class="section-header">
+            <div class="section-title">Transactions</div>
+            <button class="btn-load" onclick="loadHistory()" id="btnHistory">↻ Load</button>
+        </div>
+        <div id="txList"><div class="empty-state">No transactions yet</div></div>
+    </div>
+
+    <div class="conn-status" id="connStatus">Connecting...</div>
+</div>
+</div>
+
+<script>
+// ── NETWORKS CONFIG ──
+const NETWORKS = {
+    testnet: {
+        name: "Sepolia Testnet",
+        shortName: "Sepolia",
+        rpcs: [
+            "https://ethereum-sepolia-rpc.publicnode.com",
+            "https://sepolia.drpc.org",
+            "https://rpc2.sepolia.org"
+        ],
+        explorer: "https://sepolia.etherscan.io",
+        explorerApi: "https://api-sepolia.etherscan.io",
+        tokens: [
+            { address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", symbol: "USDC", name: "USD Coin", decimals: 6, icon: "💵" },
+            { address: "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0", symbol: "USDT", name: "Tether USD", decimals: 6, icon: "💚" }
+        ]
+    },
+    mainnet: {
+        name: "Ethereum Mainnet",
+        shortName: "Mainnet",
+        rpcs: [
+            "https://eth.llamarpc.com",
+            "https://rpc.ankr.com/eth",
+            "https://ethereum.publicnode.com"
+        ],
+        explorer: "https://etherscan.io",
+        explorerApi: "https://api.etherscan.io",
+        tokens: [
+            { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", name: "USD Coin", decimals: 6, icon: "💵" },
+            { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", name: "Tether USD", decimals: 6, icon: "💚" }
+        ]
+    }
+}
+
+const ERC20_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)",
+    "function name() view returns (string)"
+]
+
+let provider, wallet
+let tokens = []
+let txHistory = []
+let pendingMnemonic = null
+let pendingPassword = null
+let confirmIndices = []
+let pendingToken = null
+let html5QrCode = null
+let qrGenerated = false
+let currentNetwork = "testnet"
+let pendingNetworkSwitch = "testnet"
+let currentMnemonic = null
+
+// ── SCREENS ──
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"))
+    document.getElementById(id).classList.add("active")
+}
+
+// ── TABS ──
+function switchTab(tab) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
+    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"))
+    if (tab === "recover") {
+        document.querySelectorAll(".tab-btn")[0].classList.add("active")
+        document.getElementById("paneRecover").classList.add("active")
+    } else {
+        document.querySelectorAll(".tab-btn")[1].classList.add("active")
+        document.getElementById("paneCreate").classList.add("active")
+    }
+}
+
+// ── NETWORK MODAL ──
+function openNetworkModal() {
+    selectNetwork(currentNetwork)
+    document.getElementById("networkModal").classList.add("active")
+}
+
+function closeNetworkModal() {
+    document.getElementById("networkModal").classList.remove("active")
+}
+
+function selectNetwork(net) {
+    pendingNetworkSwitch = net
+    document.getElementById("optTestnet").className = "network-option testnet-opt" + (net === "testnet" ? " selected-testnet" : "")
+    document.getElementById("optMainnet").className = "network-option mainnet-opt" + (net === "mainnet" ? " selected-mainnet" : "")
+    const warning = document.getElementById("mainnetWarning")
+    const confirmBtn = document.getElementById("btnConfirmNetwork")
+    if (net === "mainnet") {
+        warning.classList.add("show")
+        confirmBtn.className = "btn-modal-confirm mainnet"
+        confirmBtn.innerText = "Switch to Mainnet ⚠️"
+    } else {
+        warning.classList.remove("show")
+        confirmBtn.className = "btn-modal-confirm"
+        confirmBtn.innerText = "Switch Network"
+    }
+}
+
+async function confirmNetworkSwitch() {
+    if (pendingNetworkSwitch === currentNetwork) {
+        closeNetworkModal()
+        return
+    }
+    closeNetworkModal()
+    currentNetwork = pendingNetworkSwitch
+    updateNetworkUI()
+    // Reconnect wallet on new network
+    if (currentMnemonic) {
+        document.getElementById("balValue").innerText = "..."
+        document.getElementById("balAmount").classList.add("loading")
+        document.getElementById("connStatus").innerText = "Switching network..."
+        await loadWalletFromMnemonic(currentMnemonic)
+    }
+}
+
+function updateNetworkUI() {
+    const net = NETWORKS[currentNetwork]
+    const testnetBtn = document.getElementById("netTestnetBtn")
+    const mainnetBtn = document.getElementById("netMainnetBtn")
+
+    if (currentNetwork === "testnet") {
+        testnetBtn.className = "net-option active-testnet"
+        mainnetBtn.className = "net-option"
+        document.getElementById("balanceCard").classList.remove("mainnet-active")
+    } else {
+        testnetBtn.className = "net-option"
+        mainnetBtn.className = "net-option active-mainnet"
+        document.getElementById("balanceCard").classList.add("mainnet-active")
+    }
+
+    document.getElementById("balLabel").innerText = "ETH Balance · " + net.name
+    document.getElementById("connStatus").innerText = "✅ Connected · " + net.name
+}
+
+// ── CREATE ──
+function startCreate() {
+    const pass = document.getElementById("createPassword").value
+    const confirm = document.getElementById("createPasswordConfirm").value
+    const err = document.getElementById("createError")
+    if (!pass || pass.length < 6) { showAlert(err, "Password must be at least 6 characters"); return }
+    if (pass !== confirm) { showAlert(err, "Passwords do not match"); return }
+    const newWallet = ethers.Wallet.createRandom()
+    pendingMnemonic = newWallet.mnemonic.phrase
+    pendingPassword = pass
+    const words = pendingMnemonic.split(" ")
+    document.getElementById("seedGrid").innerHTML = words.map((w, i) => `
+        <div class="seed-word">
+            <span class="num">${i + 1}</span>
+            <span class="word">${w}</span>
+        </div>
+    `).join("")
+    showScreen("screenSeed")
+}
+
+function goToConfirm() {
+    const positions = []
+    while (positions.length < 2) {
+        const n = Math.floor(Math.random() * 12)
+        if (!positions.includes(n)) positions.push(n)
+    }
+    positions.sort((a, b) => a - b)
+    confirmIndices = positions
+    document.getElementById("confirmNum1").innerText = positions[0] + 1
+    document.getElementById("confirmNum2").innerText = positions[1] + 1
+    document.getElementById("confirmInput1").value = ""
+    document.getElementById("confirmInput2").value = ""
+    document.getElementById("confirmError").classList.remove("show")
+    showScreen("screenConfirm")
+}
+
+function checkConfirm() {
+    const words = pendingMnemonic.split(" ")
+    const a1 = document.getElementById("confirmInput1").value.trim().toLowerCase()
+    const a2 = document.getElementById("confirmInput2").value.trim().toLowerCase()
+    const err = document.getElementById("confirmError")
+    if (a1 !== words[confirmIndices[0]]) { showAlert(err, `Word ${confirmIndices[0]+1} is incorrect`); return }
+    if (a2 !== words[confirmIndices[1]]) { showAlert(err, `Word ${confirmIndices[1]+1} is incorrect`); return }
+    saveEncrypted(pendingMnemonic, pendingPassword)
+    loadWalletFromMnemonic(pendingMnemonic)
+}
+
+// ── RECOVER ──
+async function recoverWallet() {
+    const phrase = document.getElementById("recoverPhrase").value.trim()
+    const pass = document.getElementById("recoverPassword").value
+    const err = document.getElementById("recoverError")
+    if (!phrase) { showAlert(err, "Please enter your seed phrase"); return }
+    if (!pass) { showAlert(err, "Please enter your password"); return }
+    const wordCount = phrase.split(/\s+/).length
+    if (wordCount !== 12 && wordCount !== 24) { showAlert(err, "Seed phrase must be 12 or 24 words"); return }
+    try {
+        await loadWalletFromMnemonic(phrase)
+        saveEncrypted(phrase, pass)
+    } catch(e) {
+        showAlert(err, "Invalid seed phrase. Please check your words.")
+    }
+}
+
+// ── ENCRYPTION ──
+function saveEncrypted(mnemonic, password) {
+    try {
+        const encoded = btoa(mnemonic.split("").map((c, i) =>
+            String.fromCharCode(c.charCodeAt(0) ^ password.charCodeAt(i % password.length))
+        ).join(""))
+        localStorage.setItem("sp_wallet", encoded)
+    } catch(e) {}
+}
+
+// ── LOAD WALLET ──
+async function loadWalletFromMnemonic(mnemonic) {
+    currentMnemonic = mnemonic
+    const net = NETWORKS[currentNetwork]
+    provider = null
+    wallet = null
+
+    for (let url of net.rpcs) {
+        try {
+            provider = new ethers.JsonRpcProvider(url)
+            await provider.getBlockNumber()
+            wallet = ethers.Wallet.fromPhrase(mnemonic, provider)
+            break
+        } catch(e) { console.log("RPC failed:", url) }
+    }
+
+    if (!wallet) throw new Error("Could not connect")
+
+    tokens = [...net.tokens]
+    qrGenerated = false
+
+    document.getElementById("addrDisplay").innerText = wallet.address
+    updateNetworkUI()
+
+    showScreen("screenWallet")
+    await refreshAll()
+    renderTokenList()
+    updateSendSelector()
+}
+
+// ── REFRESH ──
+async function refreshAll() {
+    await refreshBalance()
+    await refreshTokenBalances()
+}
+
+async function refreshBalance() {
+    try {
+        document.getElementById("balValue").innerText = "..."
+        document.getElementById("balAmount").classList.add("loading")
+        const bal = await provider.getBalance(wallet.address)
+        const eth = parseFloat(ethers.formatEther(bal)).toFixed(4)
+        document.getElementById("balValue").innerText = eth
+        document.getElementById("balAmount").classList.remove("loading")
+        document.getElementById("balSub").innerText = NETWORKS[currentNetwork].name + " · Updated just now"
+    } catch(e) {
+        document.getElementById("balValue").innerText = "Error"
+        document.getElementById("balAmount").classList.remove("loading")
+    }
+}
+
+async function refreshTokenBalances() {
+    for (let token of tokens) {
+        try {
+            const contract = new ethers.Contract(token.address, ERC20_ABI, provider)
+            const balance = await contract.balanceOf(wallet.address)
+            token.balance = parseFloat(ethers.formatUnits(balance, token.decimals)).toFixed(4)
+        } catch(e) { token.balance = "—" }
+    }
+    renderTokenList()
+}
+
+// ── QR RECEIVE ──
+function openQRPanel() {
+    const panel = document.getElementById("panelReceive")
+    panel.classList.add("active")
+    if (!qrGenerated && wallet) {
+        const qrEl = document.getElementById("qrCode")
+        qrEl.innerHTML = ""
+        new QRCode(qrEl, {
+            text: wallet.address,
+            width: 180, height: 180,
+            colorDark: "#000000", colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        })
+        document.getElementById("qrAddress").innerText = wallet.address
+        qrGenerated = true
+    }
+}
+
+// ── QR SCAN ──
+function openScanner() {
+    document.getElementById("panelScanner").classList.add("active")
+    document.getElementById("scannerError").classList.remove("show")
+    document.getElementById("scannerStatus").innerText = "Point your camera at a wallet QR code"
+    html5QrCode = new Html5Qrcode("qrScanner")
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 200, height: 200 } },
+        (decodedText) => {
+            let address = decodedText.trim()
+            if (address.startsWith("ethereum:")) {
+                address = address.split("ethereum:")[1].split("@")[0].split("?")[0]
+            }
+            if (ethers.isAddress(address)) {
+                document.getElementById("sendTo").value = address
+                document.getElementById("scannerStatus").innerText = "✅ Address scanned!"
+                closeScanner()
+            } else {
+                document.getElementById("scannerStatus").innerText = "⚠️ Not a valid address. Try again."
+            }
+        },
+        () => {}
+    ).catch(() => {
+        showAlert(document.getElementById("scannerError"), "Camera access denied. Please allow camera permission.")
+    })
+}
+
+function closeScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode = null
+            document.getElementById("panelScanner").classList.remove("active")
+        }).catch(() => {
+            html5QrCode = null
+            document.getElementById("panelScanner").classList.remove("active")
+        })
+    } else {
+        document.getElementById("panelScanner").classList.remove("active")
+    }
+}
+
+// ── TOKENS ──
+function renderTokenList() {
+    const el = document.getElementById("tokenList")
+    if (!tokens.length) { el.innerHTML = '<div class="empty-state">No tokens added yet</div>'; return }
+    el.innerHTML = tokens.map(t => `
+        <div class="token-item">
+            <div class="token-icon">${t.icon || "🪙"}</div>
+            <div class="token-details">
+                <div class="token-name">${t.name}</div>
+                <div class="token-addr">${t.address.slice(0,16)}...</div>
+            </div>
+            <div class="token-balance">
+                <div class="token-bal-amount">${t.balance || "—"}</div>
+                <div class="token-bal-symbol">${t.symbol}</div>
+            </div>
+        </div>
+    `).join("")
+}
+
+function updateSendSelector() {
+    const select = document.getElementById("sendTokenSelect")
+    select.innerHTML = `<option value="ETH">ETH — Ethereum</option>`
+    tokens.forEach(t => {
+        const opt = document.createElement("option")
+        opt.value = t.address
+        opt.innerText = `${t.symbol} — ${t.name}`
+        select.appendChild(opt)
+    })
+}
+
+function updateSendLabel() {
+    const val = document.getElementById("sendTokenSelect").value
+    const label = document.getElementById("sendAmountLabel")
+    if (val === "ETH") {
+        label.innerText = "Amount (ETH)"
+        document.getElementById("sendAmount").placeholder = "0.001"
+    } else {
+        const token = tokens.find(t => t.address === val)
+        label.innerText = `Amount (${token ? token.symbol : "Token"})`
+        document.getElementById("sendAmount").placeholder = "1.0"
+    }
+}
+
+async function lookupToken() {
+    const addr = document.getElementById("tokenContractAddr").value.trim()
+    const err = document.getElementById("tokenError")
+    const success = document.getElementById("tokenSuccess")
+    err.classList.remove("show"); success.classList.remove("show")
+    if (!ethers.isAddress(addr)) { showAlert(err, "Invalid contract address"); return }
+    document.getElementById("btnLookup").innerText = "Looking up..."
+    document.getElementById("tokenPreview").style.display = "none"
+    document.getElementById("btnAddConfirm").style.display = "none"
+    try {
+        const contract = new ethers.Contract(addr, ERC20_ABI, provider)
+        const [name, symbol, decimals, balance] = await Promise.all([
+            contract.name(), contract.symbol(),
+            contract.decimals(), contract.balanceOf(wallet.address)
+        ])
+        const readable = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4)
+        pendingToken = { address: addr, name, symbol, decimals, balance: readable, icon: "🪙" }
+        document.getElementById("previewName").innerText = name
+        document.getElementById("previewAddr").innerText = addr
+        document.getElementById("previewSymbol").innerText = symbol
+        document.getElementById("previewBalance").innerText = readable
+        document.getElementById("tokenPreview").style.display = "block"
+        document.getElementById("btnAddConfirm").style.display = "block"
+    } catch(e) {
+        showAlert(err, "Could not find token. Make sure the address is a valid ERC-20 contract.")
+    }
+    document.getElementById("btnLookup").innerText = "Look Up Token →"
+}
+
+function confirmAddToken() {
+    if (!pendingToken) return
+    const already = tokens.find(t => t.address.toLowerCase() === pendingToken.address.toLowerCase())
+    if (already) { showAlert(document.getElementById("tokenError"), "Token already in your wallet"); return }
+    tokens.push(pendingToken)
+    renderTokenList()
+    updateSendSelector()
+    const success = document.getElementById("tokenSuccess")
+    success.className = "alert success show"
+    success.innerText = `✅ ${pendingToken.symbol} added to your wallet!`
+    pendingToken = null
+    setTimeout(() => { closeAddToken() }, 1500)
+}
+
+// ── SEND ──
+async function sendFunds() {
+    const tokenAddress = document.getElementById("sendTokenSelect").value
+    const to = document.getElementById("sendTo").value.trim()
+    const amount = document.getElementById("sendAmount").value.trim()
+    const statusEl = document.getElementById("sendStatus")
+    const btn = document.getElementById("btnSend")
+    if (!to || !amount) { showTxStatus(statusEl, "error", "❌ Please fill in all fields"); return }
+    if (!ethers.isAddress(to)) { showTxStatus(statusEl, "error", "❌ Invalid Ethereum address"); return }
+    if (parseFloat(amount) <= 0) { showTxStatus(statusEl, "error", "❌ Amount must be greater than 0"); return }
+    try {
+        btn.disabled = true; btn.innerText = "Sending..."
+        showTxStatus(statusEl, "pending", "⏳ Broadcasting transaction...")
+        let tx
+        if (tokenAddress === "ETH") {
+            tx = await wallet.sendTransaction({ to, value: ethers.parseEther(amount) })
+        } else {
+            const token = tokens.find(t => t.address === tokenAddress)
+            const contract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet)
+            tx = await contract.transfer(to, ethers.parseUnits(amount, token.decimals))
+        }
+        showTxStatus(statusEl, "pending", "⏳ Waiting for confirmation...\n🔗 " + tx.hash)
+        const receipt = await tx.wait()
+        showTxStatus(statusEl, "success", "✅ Confirmed!\n🔗 " + receipt.hash)
+        txHistory.unshift({
+            type: "sent", hash: receipt.hash, amount,
+            symbol: tokenAddress === "ETH" ? "ETH" : tokens.find(t => t.address === tokenAddress)?.symbol
+        })
+        renderHistory()
+        await refreshAll()
+        document.getElementById("sendTo").value = ""
+        document.getElementById("sendAmount").value = ""
+    } catch(e) {
+        showTxStatus(statusEl, "error", "❌ " + e.message)
+    } finally {
+        btn.disabled = false; btn.innerText = "Send →"
+    }
+}
+
+// ── HISTORY ──
+async function loadHistory() {
+    const btn = document.getElementById("btnHistory")
+    btn.classList.add("spinning"); btn.innerText = "↻"
+    try {
+        const net = NETWORKS[currentNetwork]
+        const url = `${net.explorerApi}/api?module=account&action=txlist&address=${wallet.address}&startblock=0&endblock=99999999&sort=desc&offset=10&page=1`
+        const res = await fetch(url)
+        const data = await res.json()
+        if (data.result && Array.isArray(data.result)) {
+            txHistory = data.result.slice(0, 10).map(tx => ({
+                type: tx.from.toLowerCase() === wallet.address.toLowerCase() ? "sent" : "received",
+                hash: tx.hash,
+                amount: parseFloat(ethers.formatEther(tx.value)).toFixed(4),
+                symbol: "ETH"
+            }))
+            renderHistory()
+        }
+    } catch(e) { console.log("History failed") }
+    btn.classList.remove("spinning"); btn.innerText = "↻ Load"
+}
+
+function renderHistory() {
+    const el = document.getElementById("txList")
+    const net = NETWORKS[currentNetwork]
+    if (!txHistory.length) { el.innerHTML = '<div class="empty-state">No transactions yet</div>'; return }
+    el.innerHTML = txHistory.map(tx => `
+        <div class="tx-item">
+            <div class="tx-icon ${tx.type}">${tx.type === "sent" ? "↗" : "↙"}</div>
+            <div class="tx-details">
+                <div class="tx-type">${tx.type === "sent" ? "Sent" : "Received"} ${tx.symbol || "ETH"}</div>
+                <div class="tx-hash">${tx.hash.slice(0, 22)}...</div>
+            </div>
+            <div class="tx-amount ${tx.type}">${tx.type === "sent" ? "-" : "+"}${tx.amount} ${tx.symbol || "ETH"}</div>
+        </div>
+    `).join("")
+}
+
+// ── PANEL CONTROLS ──
+function togglePanel(id) { document.getElementById(id).classList.toggle("active") }
+function closePanel(id) { document.getElementById(id).classList.remove("active") }
+
+function openAddToken() {
+    document.getElementById("panelTokens").classList.remove("active")
+    document.getElementById("panelAddToken").classList.add("active")
+}
+
+function closeAddToken() {
+    document.getElementById("panelAddToken").classList.remove("active")
+    document.getElementById("tokenContractAddr").value = ""
+    document.getElementById("tokenPreview").style.display = "none"
+    document.getElementById("btnAddConfirm").style.display = "none"
+    document.getElementById("tokenError").classList.remove("show")
+    document.getElementById("tokenSuccess").classList.remove("show")
+    document.getElementById("btnLookup").innerText = "Look Up Token →"
+    pendingToken = null
+}
+
+// ── HELPERS ──
+function copyAddr() {
+    if (!wallet) return
+    navigator.clipboard.writeText(wallet.address).then(() => {
+        const btn = document.querySelector(".btn-copy")
+        if (btn) btn.innerText = "✅"
+        setTimeout(() => { if (btn) btn.innerText = "📋" }, 2000)
+    })
+}
+
+function showAlert(el, msg) {
+    el.className = "alert error show"
+    el.innerText = "❌ " + msg
+}
+
+function showTxStatus(el, type, msg) {
+    el.className = "tx-status show " + type
+    el.innerText = msg
+    if (msg.includes("🔗")) {
+        const hash = msg.split("🔗 ")[1]
+        if (hash && hash.startsWith("0x")) {
+            const net = NETWORKS[currentNetwork]
+            const link = document.createElement("a")
+            link.href = `${net.explorer}/tx/${hash}`
+            link.target = "_blank"
+            link.className = "etherscan-link"
+            link.innerText = "View on Explorer ↗"
+            el.appendChild(document.createElement("br"))
+            el.appendChild(link)
+        }
+    }
+}
+
+function logout() {
+    wallet = null; provider = null
+    txHistory = []; tokens = []
+    pendingMnemonic = null; pendingPassword = null
+    currentMnemonic = null; qrGenerated = false
+    currentNetwork = "testnet"
+    closeScanner()
+    document.getElementById("recoverPhrase").value = ""
+    document.getElementById("recoverPassword").value = ""
+    document.getElementById("createPassword").value = ""
+    document.getElementById("createPasswordConfirm").value = ""
+    showScreen("screenLogin")
+}
+</script>
+</body>
+</html>
